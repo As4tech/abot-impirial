@@ -1,0 +1,25 @@
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Edit Category</h2>
+    </x-slot>
+
+    <div class="p-4 max-w-xl">
+        <div class="bg-white shadow-sm rounded-lg p-4">
+            <form method="POST" action="{{ route('menu-categories.update', $category) }}" class="space-y-4">
+                @csrf
+                @method('PUT')
+                <div>
+                    <label class="block text-sm font-medium">Name</label>
+                    <input type="text" name="name" value="{{ old('name', $category->name) }}" class="w-full border rounded px-3 py-2" />
+                    @error('name')
+                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div class="flex justify-end gap-2">
+                    <a href="{{ route('menu-categories.index') }}" class="px-4 py-2 border rounded">Cancel</a>
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</x-app-layout>
