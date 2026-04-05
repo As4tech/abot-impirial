@@ -42,7 +42,7 @@
                     <tr>
                         <td class="px-4 py-3 font-medium">#{{ $p->id }}</td>
                         <td class="px-4 py-3">{{ $p->supplier?->name ?? '—' }}</td>
-                        <td class="px-4 py-3">₱{{ number_format($p->total_cost, 2) }}</td>
+                        <td class="px-4 py-3"><x-currency :amount="$p->total_cost" /></td>
                         <td class="px-4 py-3 text-sm text-gray-600">{{ $p->created_at->format('Y-m-d H:i') }}</td>
                         <td class="px-4 py-3 text-right">
                             <a href="{{ route('inventory.purchases.show', $p) }}" title="View" class="inline-flex items-center text-blue-600 hover:underline">

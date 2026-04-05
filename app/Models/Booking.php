@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,24 +10,21 @@ class Booking extends Model
     use HasFactory;
 
     protected $fillable = [
-        'room_id', 'guest_id', 'check_in', 'check_out', 'status',
+        'order_id', 'room_id', 'rate_type', 'hourly_rate', 'nightly_rate', 'initial_charge', 'computed_charge', 'check_in_at', 'check_out_at', 'status',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'check_in' => 'datetime',
-            'check_out' => 'datetime',
-        ];
-    }
+    protected $casts = [
+        'check_in_at' => 'datetime',
+        'check_out_at' => 'datetime',
+    ];
 
     public function room(): BelongsTo
     {
         return $this->belongsTo(Room::class);
     }
 
-    public function guest(): BelongsTo
+    public function order(): BelongsTo
     {
-        return $this->belongsTo(Guest::class);
+        return $this->belongsTo(Order::class);
     }
 }

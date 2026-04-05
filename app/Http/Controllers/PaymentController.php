@@ -29,8 +29,8 @@ class PaymentController extends Controller
         ]);
 
         return redirect()
-            ->route('pos.receipt', $order)
-            ->with('status', 'Payment recorded');
+            ->route('pos.payment.confirmation', $order)
+            ->with('status', "Payment of {$validated['amount']} recorded successfully via {$validated['method']}!");
     }
 
     public function receipt(Order $order): View
@@ -41,6 +41,14 @@ class PaymentController extends Controller
         $balance = max(0, (float) $order->total_amount - $paid);
 
         return view('pos.receipt', compact('order', 'paid', 'balance'));
+    }
+
+    public function paymentConfirmation(Order $order): View
+    {
+        $currency = function_exists('setting') ? (setting('pos.currency') ?: 'PHP') : 'PHP';
+        $order->load(['items.product', 'items.menuItem', 'payments', 'user']);
+
+        return view('pos.payment-confirmation', compact('order', 'currency'));
     }
 
     public function receiptThermal(Order $order): View

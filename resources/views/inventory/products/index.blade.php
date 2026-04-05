@@ -2,7 +2,9 @@
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Products</h2>
+            @can('products.create')
             <a href="{{ route('inventory.products.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">New Product</a>
+            @endcan
         </div>
     </x-slot>
 
@@ -69,10 +71,13 @@
                             @endif
                         </td>
                         <td class="px-4 py-3 text-right space-x-2">
+                            @can('products.update')
                             <a href="{{ route('inventory.products.edit', $product) }}" title="Edit" class="inline-flex items-center text-blue-600 hover:underline">
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M16.5 3.964a2.5 2.5 0 113.536 3.536L7.5 20.036H4v-3.5L16.5 3.964z"/></svg>
                                 <span class="sr-only">Edit</span>
                             </a>
+                            @endcan
+                            @can('products.delete')
                             <form method="POST" action="{{ route('inventory.products.destroy', $product) }}" class="inline">
                                 @csrf
                                 @method('DELETE')
@@ -81,6 +86,7 @@
                                     <span class="sr-only">Delete</span>
                                 </button>
                             </form>
+                            @endcan
                         </td>
                     </tr>
                 @empty

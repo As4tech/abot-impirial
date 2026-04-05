@@ -36,7 +36,12 @@ class MenuItemController extends Controller
             'category_id' => ['required', 'integer', 'exists:menu_categories,id'],
             'name' => ['required', 'string', 'max:255'],
             'price' => ['required', 'numeric', 'min:0'],
+            'image' => ['nullable','image','mimes:jpg,jpeg,png,webp','max:2048'],
         ]);
+        if ($request->hasFile('image')) {
+            $stored = $request->file('image')->store('uploads/menu-items', 'public');
+            $validated['image_path'] = '/storage/' . $stored;
+        }
         MenuItem::create($validated);
         return redirect()->route('menu-items.index')->with('status', 'Menu item created');
     }
@@ -53,7 +58,12 @@ class MenuItemController extends Controller
             'category_id' => ['required', 'integer', 'exists:menu_categories,id'],
             'name' => ['required', 'string', 'max:255'],
             'price' => ['required', 'numeric', 'min:0'],
+            'image' => ['nullable','image','mimes:jpg,jpeg,png,webp','max:2048'],
         ]);
+        if ($request->hasFile('image')) {
+            $stored = $request->file('image')->store('uploads/menu-items', 'public');
+            $validated['image_path'] = '/storage/' . $stored;
+        }
         $menu_item->update($validated);
         return redirect()->route('menu-items.index')->with('status', 'Menu item updated');
     }

@@ -23,8 +23,9 @@ class SettingsController extends Controller
         $validated = $request->validate([
             // General
             'general.business_name' => ['nullable','string','max:255'],
-            'general.logo' => ['nullable','url'],
-            'general.favicon' => ['nullable','url'],
+            'general.address' => ['nullable','string','max:500'],
+            'general.logo' => ['nullable','string','max:500'],
+            'general.favicon' => ['nullable','string','max:500'],
             'general.logo_file' => ['nullable','image','max:2048'],
             'general.favicon_file' => ['nullable','mimetypes:image/x-icon,image/vnd.microsoft.icon,image/png','max:512'],
             'general.remove_logo' => ['nullable','boolean'],
@@ -40,6 +41,19 @@ class SettingsController extends Controller
             'rooms.check_in_time' => ['nullable','date_format:H:i'],
             'rooms.check_out_time' => ['nullable','date_format:H:i'],
         ]);
+
+        // Validate URL fields only if they're provided and not being overridden by file uploads
+        if ($request->filled('general.logo') && !$request->hasFile('general.logo_file') && !$request->boolean('general.remove_logo')) {
+            $request->validate([
+                'general.logo' => ['url'],
+            ]);
+        }
+        
+        if ($request->filled('general.favicon') && !$request->hasFile('general.favicon_file') && !$request->boolean('general.remove_favicon')) {
+            $request->validate([
+                'general.favicon' => ['url'],
+            ]);
+        }
 
         $flat = [];
         foreach (['general','pos','inventory','rooms'] as $section) {

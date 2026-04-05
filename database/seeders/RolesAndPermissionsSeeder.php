@@ -22,15 +22,28 @@ class RolesAndPermissionsSeeder extends Seeder
             Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
         }
 
-        // Create base permissions
+        // Define granular permissions aligned with app gates
         $permissions = [
-            'create_order',
-            'manage_inventory',
-            'view_reports',
-            'manage_roles',
-            'manage_permissions',
-            'manage_users',
-            'view_kitchen',
+            // Products
+            'products.view', 'products.create', 'products.update', 'products.delete',
+            // Menu Items
+            'menu_items.view', 'menu_items.create', 'menu_items.update', 'menu_items.delete',
+            // Bookings
+            'bookings.view', 'bookings.create', 'bookings.update',
+            // Rooms
+            'rooms.view', 'rooms.create', 'rooms.update', 'rooms.delete',
+            // Room Types
+            'room-types.view', 'room-types.create', 'room-types.edit', 'room-types.delete',
+            // Inventory
+            'inventory.view', 'inventory.manage',
+            // Expenses
+            'expenses.view', 'expenses.manage',
+            // POS and Orders
+            'pos.view', 'orders.view',
+            // Registers
+            'registers.view', 'registers.open', 'registers.close',
+            // Reports (granular)
+            'reports.sales.view', 'reports.inventory.view', 'reports.bookings.view', 'reports.registers.view',
         ];
 
         foreach ($permissions as $perm) {
@@ -39,13 +52,21 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Assign permissions to roles (idempotent)
         $admin = Role::findByName('Admin');
-        $admin->givePermissionTo($permissions);
+        $admin->syncPermissions($permissions);
 
         $manager = Role::findByName('Manager');
-        $manager->syncPermissions(['create_order','manage_inventory','view_reports']);
+        $manager->syncPermissions([
+            'reports.sales.view', 'reports.inventory.view', 'reports.bookings.view', 'reports.registers.view',
+            'inventory.view', 'expenses.view', 'expenses.manage',
+            'registers.view', 'registers.open', 'registers.close',
+            'products.view', 'menu_items.view', 'bookings.view',
+            'rooms.view', 'room-types.view',
+        ]);
 
         $cashier = Role::findByName('Cashier');
-        $cashier->syncPermissions(['create_order']);
+        $cashier->syncPermissions([
+            'pos.view', 'orders.view', 'registers.open', 'registers.close'
+        ]);
 
         $kitchen = Role::findByName('Kitchen Staff');
         $kitchen->syncPermissions(['view_kitchen']);

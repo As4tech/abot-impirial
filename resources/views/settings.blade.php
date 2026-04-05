@@ -42,9 +42,14 @@
                             <p class="mt-1 text-xs text-gray-500">Shown in page titles, receipts, and emails.</p>
                         </div>
                         <div>
+                            <label class="block text-sm font-medium">Business address</label>
+                            <input type="text" name="general[address]" value="{{ old('general.address', $s['general.address'] ?? setting('general.address')) }}" class="w-full border rounded px-3 py-2" placeholder="123 Main St, City, Country" />
+                            <p class="mt-1 text-xs text-gray-500">Physical business address displayed on receipts.</p>
+                        </div>
+                        <div>
                             <label class="block text-sm font-medium">Contact info</label>
                             <input type="text" name="general[contact]" value="{{ old('general.contact', $s['general.contact'] ?? setting('general.contact')) }}" class="w-full border rounded px-3 py-2" placeholder="e.g. +63 900 000 0000, info@example.com" />
-                            <p class="mt-1 text-xs text-gray-500">Displayed on receipts if configured.</p>
+                            <p class="mt-1 text-xs text-gray-500">Phone and email displayed on receipts.</p>
                         </div>
                         <div class="space-y-2">
                             <label class="block text-sm font-medium">Logo</label>
@@ -60,7 +65,7 @@
                                 </div>
                                 <input id="logoFileInput" type="file" name="general[logo_file]" accept="image/png,image/jpeg,image/svg+xml" class="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-3 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-gray-100 hover:file:bg-gray-200" />
                             </div>
-                            <input type="url" name="general[logo]" value="{{ old('general.logo', $s['general.logo'] ?? setting('general.logo')) }}" class="w-full border rounded px-3 py-2" placeholder="https://.../logo.png" />
+                            <input type="url" name="general[logo]" value="{{ old('general.logo') }}" class="w-full border rounded px-3 py-2" placeholder="https://.../logo.png" />
                             <p class="mt-1 text-xs text-gray-500">Upload a file or provide a public URL. Uploaded file takes precedence.</p>
                             <label class="mt-2 inline-flex items-center gap-2 text-xs text-gray-600">
                                 <input id="removeLogoToggle" type="checkbox" name="general[remove_logo]" value="1" class="rounded border-gray-300" /> Remove logo
@@ -80,7 +85,7 @@
                                 </div>
                                 <input id="faviconFileInput" type="file" name="general[favicon_file]" accept="image/x-icon,image/png" class="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-3 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-gray-100 hover:file:bg-gray-200" />
                             </div>
-                            <input type="url" name="general[favicon]" value="{{ old('general.favicon', $s['general.favicon'] ?? setting('general.favicon')) }}" class="w-full border rounded px-3 py-2" placeholder="https://.../favicon.ico" />
+                            <input type="url" name="general[favicon]" value="{{ old('general.favicon') }}" class="w-full border rounded px-3 py-2" placeholder="https://.../favicon.ico" />
                             <p class="mt-1 text-xs text-gray-500">Upload an .ico or .png, or provide a URL. Uploaded file takes precedence.</p>
                             <label class="mt-2 inline-flex items-center gap-2 text-xs text-gray-600">
                                 <input id="removeFaviconToggle" type="checkbox" name="general[remove_favicon]" value="1" class="rounded border-gray-300" /> Remove favicon

@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\MenuCategory;
 use App\Models\Room;
+use App\Models\Register;
 use App\Services\PosService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class PosController extends Controller
@@ -16,8 +18,18 @@ class PosController extends Controller
     {
     }
 
-    public function index(Request $request): View
+    public function index(Request $request)
     {
+        // Require an open register before entering POS
+        $userId = $request->user()->id;
+        $openRegister = Register::where('user_id', $userId)
+            ->where('status', 'open')
+            ->orderByDesc('opened_at')
+            ->first();
+        if (! $openRegister) {
+            return redirect()->route('pos.register.index');
+        }
+
         $products = Product::orderBy('name')->get();
         $menuCategories = MenuCategory::with('items')->orderBy('name')->get();
         $cart = $this->pos->getCart();
@@ -25,7 +37,7 @@ class PosController extends Controller
 
         $rooms = Room::where('status', 'Available')->orderBy('room_number')->get();
 
-        return view('pos', compact('products', 'menuCategories', 'cart', 'total', 'rooms'));
+        return view('pos', compact('products', 'menuCategories', 'cart', 'total', 'rooms', 'openRegister'));
     }
 
     public function add(Request $request): RedirectResponse
@@ -90,6 +102,8 @@ class PosController extends Controller
         $validated = $request->validate([
             'order_type' => ['required', 'in:walk-in,room'],
             'room_id' => ['nullable', 'integer', 'exists:rooms,id'],
+            'room_rate_type' => ['nullable', 'in:long,short'],
+            'room_rate_price' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         // If room order, ensure the room is available
@@ -100,8 +114,18 @@ class PosController extends Controller
             abort_unless($room, 422, 'Selected room is not available');
         }
 
-        $order = $this->pos->checkout($request->user(), $validated['order_type'], $roomId);
+        $rateType = $validated['room_rate_type'] ?? null;
+        $ratePrice = isset($validated['room_rate_price']) ? (float) $validated['room_rate_price'] : null;
+        // Compute authoritative room charge using DB values
+        if ($validated['order_type'] === 'room') {
+            $rateType = in_array($rateType, ['long', 'short'], true) ? $rateType : 'long';
+            $ratePrice = $rateType === 'short'
+                ? (float) ($room->short_price ?? $room->price ?? 0)
+                : (float) ($room->long_price ?? $room->price ?? 0);
+        }
+        $order = $this->pos->checkout($request->user(), $validated['order_type'], $roomId, $rateType, $ratePrice);
 
-        return redirect()->route('pos.receipt', $order);
+        return redirect()->route('pos.payment.confirmation', $order)
+            ->with('status', 'Order created successfully! Please record payment to complete the transaction.');
     }
 }

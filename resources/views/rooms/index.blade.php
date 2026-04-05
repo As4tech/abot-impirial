@@ -2,10 +2,12 @@
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Rooms</h2>
+            @can('rooms.create')
             <a href="{{ route('rooms.create') }}" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M12 4.5a.75.75 0 0 1 .75.75v6h6a.75.75 0 0 1 0 1.5h-6v6a.75.75 0 0 1-1.5 0v-6h-6a.75.75 0 0 1 0-1.5h6v-6A.75.75 0 0 1 12 4.5Z"/></svg>
                 New Room
             </a>
+            @endcan
         </div>
     </x-slot>
 
@@ -15,10 +17,10 @@
         @endif
 
         <form method="GET" class="bg-white rounded-lg shadow-sm p-4">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
                 <div>
                     <label class="block text-sm text-gray-600 mb-1">Search</label>
-                    <input type="text" name="q" value="{{ $q ?? '' }}" placeholder="Room # or type" class="w-full border rounded px-3 py-2" />
+                    <input type="text" name="q" value="{{ $q ?? '' }}" placeholder="Room # or room type" class="w-full border rounded px-3 py-2" />
                 </div>
                 <div>
                     <label class="block text-sm text-gray-600 mb-1">Status</label>
@@ -27,6 +29,14 @@
                         @foreach(['Available','Occupied','Cleaning'] as $s)
                             <option value="{{ $s }}" @selected(($status ?? '')===$s)>{{ $s }}</option>
                         @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">Stay Option</label>
+                    <select name="stay_type" class="w-full border rounded px-3 py-2">
+                        <option value="">All</option>
+                        <option value="long" @selected(($stayType ?? '')==='long')>Long</option>
+                        <option value="short" @selected(($stayType ?? '')==='short')>Short</option>
                     </select>
                 </div>
                 <div class="flex items-end gap-2">
@@ -43,7 +53,10 @@
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room #</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stay Option</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Long Price</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Short Price</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Features</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
@@ -59,8 +72,25 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3 font-medium">{{ $room->room_number }}</td>
-                            <td class="px-4 py-3">{{ $room->type }}</td>
-                            <td class="px-4 py-3"><x-currency :amount="$room->price" /></td>
+                            <td class="px-4 py-3">{{ $room->roomType?->name ?? 'Unassigned' }}</td>
+                            <td class="px-4 py-3">{{ ucfirst($room->stay_type ?? 'long') }}</td>
+                            <td class="px-4 py-3"><x-currency :amount="$room->long_price ?? $room->price" /></td>
+                            <td class="px-4 py-3"><x-currency :amount="$room->short_price ?? $room->price" /></td>
+                            <td class="px-4 py-3">
+                                @php
+                                    $features = [];
+                                    if ($room->has_ac) $features[] = 'AC';
+                                    if ($room->has_fan) $features[] = 'Fan';
+                                    if ($room->has_tv) $features[] = 'TV';
+                                    if ($room->has_fridge) $features[] = 'Fridge';
+                                    if ($room->bed_type) $features[] = $room->bed_type;
+                                @endphp
+                                @if(count($features))
+                                    <span class="text-xs">{{ implode(', ', $features) }}</span>
+                                @else
+                                    <span class="text-xs text-gray-400">—</span>
+                                @endif
+                            </td>
                             <td class="px-4 py-3">
                                 <span class="inline-flex px-2 py-1 text-xs rounded {{
                                     $room->status==='Available' ? 'bg-green-100 text-green-800' : (
@@ -68,10 +98,13 @@
                                 }}">{{ $room->status }}</span>
                             </td>
                             <td class="px-4 py-3 text-right space-x-3">
+                                @can('rooms.update')
                                 <a href="{{ route('rooms.edit', $room) }}" title="Edit" class="inline-flex items-center text-blue-600 hover:underline">
                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M16.5 3.964a2.5 2.5 0 113.536 3.536L7.5 20.036H4v-3.5L16.5 3.964z"/></svg>
                                     <span class="sr-only">Edit</span>
                                 </a>
+                                @endcan
+                                @can('rooms.delete')
                                 <form method="POST" action="{{ route('rooms.destroy', $room) }}" class="inline">
                                     @csrf
                                     @method('DELETE')
@@ -80,17 +113,20 @@
                                         <span class="sr-only">Delete</span>
                                     </button>
                                 </form>
+                                @endcan
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-4 py-10">
+                            <td colspan="10" class="px-4 py-10">
                                 <div class="text-center text-gray-600">
                                     <p class="mb-3">No rooms found.</p>
+                                    @can('rooms.create')
                                     <a href="{{ route('rooms.create') }}" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow-sm">
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M12 4.5a.75.75 0 0 1 .75.75v6h6a.75.75 0 0 1 0 1.5h-6v6a.75.75 0 0 1-1.5 0v-6h-6a.75.75 0 0 1 0-1.5h6v-6A.75.75 0 0 1 12 4.5Z"/></svg>
                                         Create your first room
                                     </a>
+                                    @endcan
                                 </div>
                             </td>
                         </tr>

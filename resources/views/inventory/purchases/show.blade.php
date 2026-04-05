@@ -19,7 +19,7 @@
                 </div>
                 <div>
                     <div class="text-sm text-gray-600">Total Cost</div>
-                    <div class="font-medium">₱{{ number_format($purchase->total_cost, 2) }}</div>
+                    <div class="font-medium"><x-currency :amount="$purchase->total_cost" /></div>
                 </div>
                 <div>
                     <div class="text-sm text-gray-600">Date</div>
@@ -43,8 +43,8 @@
                     <tr>
                         <td class="px-4 py-3">{{ $item->product?->name }}</td>
                         <td class="px-4 py-3">{{ number_format($item->quantity, 3) }}</td>
-                        <td class="px-4 py-3">₱{{ number_format($item->cost_price, 2) }}</td>
-                        <td class="px-4 py-3">₱{{ number_format($item->quantity * $item->cost_price, 2) }}</td>
+                        <td class="px-4 py-3"><x-currency :amount="$item->cost_price" /></td>
+                        <td class="px-4 py-3"><x-currency :amount="$item->quantity * $item->cost_price" /></td>
                     </tr>
                 @endforeach
                 </tbody>

@@ -5,7 +5,7 @@
 
     <div class="p-4 max-w-xl">
         <div class="bg-white shadow-sm rounded-lg p-4">
-            <form method="POST" action="{{ route('menu-items.store') }}" class="space-y-4">
+            <form method="POST" action="{{ route('menu-items.store') }}" enctype="multipart/form-data" class="space-y-4">
                 @csrf
                 <div>
                     <label class="block text-sm font-medium">Category</label>
@@ -32,6 +32,14 @@
                     @error('price')
                         <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
                     @enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium">Image</label>
+                    <input type="file" name="image" accept="image/*" class="w-full border rounded px-3 py-2" />
+                    @error('image')
+                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                    @enderror
+                    <p class="text-xs text-gray-500 mt-1">Optional. JPG, PNG, or WebP up to 2MB.</p>
                 </div>
                 <div class="flex justify-end gap-2">
                     <a href="{{ route('menu-items.index') }}" class="px-4 py-2 border rounded">Cancel</a>

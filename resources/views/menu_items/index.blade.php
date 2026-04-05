@@ -2,7 +2,9 @@
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Menu Items</h2>
+            @can('menu_items.create')
             <a href="{{ route('menu-items.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">New Item</a>
+            @endcan
         </div>
     </x-slot>
 
@@ -34,6 +36,7 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Image</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
@@ -43,14 +46,24 @@
                 <tbody class="divide-y divide-gray-100">
                 @forelse ($items as $item)
                     <tr>
+                        <td class="px-4 py-3">
+                            @if(!empty($item->image_path))
+                                <img src="{{ $item->image_path }}" alt="{{ $item->name }}" class="h-12 w-12 object-cover rounded border" />
+                            @else
+                                <div class="h-12 w-12 rounded border bg-gray-50 flex items-center justify-center text-gray-400 text-xs">N/A</div>
+                            @endif
+                        </td>
                         <td class="px-4 py-3">{{ $item->name }}</td>
                         <td class="px-4 py-3">{{ $item->category?->name }}</td>
-                        <td class="px-4 py-3">₱{{ number_format($item->price, 2) }}</td>
+                        <td class="px-4 py-3"><x-currency :amount="$item->price" /></td>
                         <td class="px-4 py-3 text-right space-x-3">
+                            @can('menu_items.update')
                             <a href="{{ route('menu-items.edit', $item) }}" title="Edit" class="inline-flex items-center text-blue-600 hover:underline">
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M16.5 3.964a2.5 2.5 0 113.536 3.536L7.5 20.036H4v-3.5L16.5 3.964z"/></svg>
                                 <span class="sr-only">Edit</span>
                             </a>
+                            @endcan
+                            @can('menu_items.delete')
                             <form method="POST" action="{{ route('menu-items.destroy', $item) }}" class="inline">
                                 @csrf
                                 @method('DELETE')
@@ -59,6 +72,7 @@
                                     <span class="sr-only">Delete</span>
                                 </button>
                             </form>
+                            @endcan
                         </td>
                     </tr>
                 @empty

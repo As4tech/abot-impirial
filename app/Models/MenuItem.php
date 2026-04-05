@@ -14,6 +14,7 @@ class MenuItem extends Model
         'category_id',
         'name',
         'price',
+        'image_path',
     ];
 
     protected function casts(): array
