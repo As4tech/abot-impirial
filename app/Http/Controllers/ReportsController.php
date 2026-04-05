@@ -382,6 +382,7 @@ class ReportsController extends Controller
         $days = (int) ($request->integer('days') ?: 14);
         $from = Carbon::today()->subDays($days - 1);
 
+        // Aggregate data for chart
         $rows = StockMovement::select(
                 DB::raw('DATE(created_at) as d'),
                 DB::raw("SUM(CASE WHEN type='in' THEN quantity WHEN type='out' THEN -quantity ELSE quantity END) as net_qty")
@@ -401,9 +402,16 @@ class ReportsController extends Controller
             ];
         }
 
+        // Detailed movements for table
+        $movements = StockMovement::with(['product'])
+            ->where('created_at', '>=', $from->startOfDay())
+            ->orderBy('created_at', 'desc')
+            ->paginate(50);
+
         return view('reports.inventory-movement', [
             'series' => $series,
             'days' => $days,
+            'movements' => $movements,
         ]);
     }
 

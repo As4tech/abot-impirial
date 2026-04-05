@@ -97,6 +97,7 @@ Route::middleware('auth')->group(function () {
     // Kitchen (KOT) - permission based
     Route::get('/kitchen', [KitchenController::class, 'index'])->middleware('permission:view_kitchen')->name('kitchen.index');
     Route::post('/kitchen/orders/{order}/status', [KitchenController::class, 'updateStatus'])->middleware('permission:view_kitchen')->name('kitchen.orders.status');
+    Route::post('/kitchen/orders/bulk-update', [KitchenController::class, 'bulkUpdateStatus'])->middleware('permission:view_kitchen')->name('kitchen.orders.bulk-update');
 
     // Restaurant - permission based
     Route::get('/restaurant', fn () => view('restaurant'))->middleware('permission:orders.view')->name('restaurant.index');
