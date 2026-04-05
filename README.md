@@ -1,58 +1,270 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Abot Imperial - Hospitality & Restaurant Management System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+<div align="center">
 
-## About Laravel
+![Abot Imperial Logo](https://via.placeholder.com/200x80/1e40af/ffffff?text=Abot+Imperial)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+**A comprehensive hospitality and restaurant management system built with Laravel**
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+[![Laravel](https://img.shields.io/badge/Laravel-11.x-FF2D20.svg?style=flat-square&logo=laravel)](https://laravel.com)
+[![PHP](https://img.shields.io/badge/PHP-8.3+-777BB4.svg?style=flat-square&logo=php)](https://php.net)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0+-4479A1.svg?style=flat-square&logo=mysql)](https://mysql.com)
+[![License](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+</div>
 
-## Learning Laravel
+## 📋 Overview
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Abot Imperial is a modern, feature-rich hospitality and restaurant management system designed to streamline operations for hotels, restaurants, and hospitality businesses. The system provides comprehensive tools for order management, inventory tracking, kitchen operations, financial reporting, and customer service.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## ✨ Key Features
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+### 🏨 Hospitality Management
+- **Room Management**: Complete room inventory with types and status tracking
+- **Reservation System**: Advanced booking and reservation management
+- **Check-in/Check-out**: Streamlined guest arrival and departure processes
+- **Room Service**: Integrated room service ordering and tracking
 
-## Agentic Development
+### 🍽️ Restaurant Operations
+- **Point of Sale (POS)**: Modern POS system with order management
+- **Menu Management**: Dynamic menu items and pricing
+- **Kitchen Display System (KOT)**: Real-time kitchen order tracking
+- **Table Management**: Restaurant table layout and status tracking
+- **Order Processing**: Complete order lifecycle from creation to payment
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+### 📦 Inventory & Stock Management
+- **Product Management**: Comprehensive product catalog with categories
+- **Stock Tracking**: Real-time inventory monitoring and alerts
+- **Purchase Management**: Purchase order creation and tracking
+- **Stock Movements**: Detailed inventory movement tracking
+- **Low Stock Alerts**: Automated notifications for inventory replenishment
 
-```bash
-composer require laravel/boost --dev
+### 💰 Financial Management
+- **Payment Processing**: Multiple payment methods and transaction tracking
+- **Expense Management**: Expense categories and tracking
+- **Sales Reporting**: Comprehensive sales analytics and reporting
+- **Revenue Tracking**: Detailed revenue analysis and forecasting
 
-php artisan boost:install
+### 👥 User Management & Security
+- **Role-Based Access Control**: Granular permissions system
+- **User Management**: Complete user administration
+- **Audit Trail**: Comprehensive activity logging
+- **Multi-Location Support**: Manage multiple business locations
+
+### 📊 Reporting & Analytics
+- **Sales Reports**: Detailed sales analysis and trends
+- **Inventory Reports**: Stock movement and usage analytics
+- **Financial Reports**: Revenue, expense, and profit reporting
+- **Operational Reports**: Kitchen performance and order analytics
+
+## 🛠️ Technology Stack
+
+- **Backend**: Laravel 11.x (PHP 8.3+)
+- **Database**: MySQL 8.0+
+- **Frontend**: Blade Templates with Tailwind CSS
+- **Authentication**: Laravel Sanctum
+- **Permissions**: Spatie Laravel Permission
+- **File Storage**: Laravel Filesystem
+- **Validation**: Laravel Form Request Validation
+
+## 📦 Installation
+
+### Prerequisites
+- PHP 8.3 or higher
+- MySQL 8.0 or higher
+- Composer 2.0 or higher
+- Node.js 18+ (for asset compilation)
+
+### Setup Instructions
+
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/as4tech/abot-imperial.git
+   cd abot-imperial
+   ```
+
+2. **Install Dependencies**
+   ```bash
+   composer install
+   npm install
+   ```
+
+3. **Environment Configuration**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
+
+4. **Configure Database**
+   ```bash
+   Edit .env file with your database credentials:
+   DB_DATABASE=abot_imperial
+   DB_USERNAME=your_username
+   DB_PASSWORD=your_password
+   ```
+
+5. **Run Database Migrations**
+   ```bash
+   php artisan migrate
+   ```
+
+6. **Seed Initial Data**
+   ```bash
+   php artisan db:seed
+   ```
+
+7. **Create Storage Link**
+   ```bash
+   php artisan storage:link
+   ```
+
+8. **Compile Assets**
+   ```bash
+   npm run build
+   ```
+
+9. **Start the Application**
+   ```bash
+   php artisan serve
+   ```
+
+## 🔧 Configuration
+
+### Environment Variables
+Key environment variables to configure:
+
+```env
+APP_NAME="Abot Imperial"
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://your-domain.com
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=abot_imperial
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+
+MAIL_MAILER=smtp
+MAIL_HOST=your-mail-host
+MAIL_PORT=587
+MAIL_USERNAME=your-email
+MAIL_PASSWORD=your-password
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### Default Credentials
+After seeding, you can login with:
+- **Email**: admin@abotimperial.com
+- **Password**: password
 
-## Contributing
+## 📚 Documentation
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### User Guide
+- [Getting Started](docs/getting-started.md)
+- [User Roles & Permissions](docs/permissions.md)
+- [Order Management](docs/orders.md)
+- [Inventory Management](docs/inventory.md)
+- [Reporting](docs/reports.md)
 
-## Code of Conduct
+### Developer Guide
+- [API Documentation](docs/api.md)
+- [Database Schema](docs/database.md)
+- [Development Setup](docs/development.md)
+- [Contributing Guidelines](CONTRIBUTING.md)
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## 🚀 Features in Detail
 
-## Security Vulnerabilities
+### Point of Sale (POS)
+- Modern, responsive POS interface
+- Real-time order tracking
+- Multiple payment methods
+- Receipt generation (standard and thermal)
+- Order history and management
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Kitchen Operations
+- Real-time Kitchen Order Ticket (KOT) display
+- Order status tracking (Pending → Preparing → Served)
+- Bulk order processing
+- Order filtering by date and status
+- Integration with restaurant POS
 
-## License
+### Inventory Management
+- Product catalog with categories
+- Real-time stock tracking
+- Purchase order management
+- Stock movement history
+- Low stock alerts and notifications
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Reporting System
+- Sales analytics and trends
+- Inventory movement reports
+- Financial reporting
+- Operational metrics
+- Export capabilities
+
+## 🔐 Security Features
+
+- Role-based access control (RBAC)
+- User authentication and authorization
+- Activity logging and audit trails
+- Data validation and sanitization
+- CSRF protection
+- SQL injection prevention
+
+## 🤝 Contributing
+
+We welcome contributions to Abot Imperial! Please read our [Contributing Guidelines](CONTRIBUTING.md) for details on:
+
+- Code of Conduct
+- Pull Request Process
+- Coding Standards
+- Bug Reporting
+- Feature Requests
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+For support and assistance:
+
+- 📧 Email: support@abotimperial.com
+- 📞 Phone: +1 (555) 123-4567
+- 💬 Live Chat: Available on our website
+- 📖 Documentation: [docs.abotimperial.com](https://docs.abotimperial.com)
+
+## 🗺️ Roadmap
+
+### Upcoming Features
+- [ ] Mobile App (iOS/Android)
+- [ ] Advanced Analytics Dashboard
+- [ ] Multi-Currency Support
+- [ ] API Integration Layer
+- [ ] Cloud Deployment Options
+- [ ] Advanced Reporting Features
+- [ ] Customer Loyalty Program
+- [ ] Online Ordering Integration
+
+### Version History
+- **v2.0.0** - Current stable release
+- **v1.5.0** - Added inventory management
+- **v1.0.0** - Initial release
+
+## 🏆 Acknowledgments
+
+- Built with [Laravel](https://laravel.com) - The PHP Framework for Web Artisans
+- UI components by [Tailwind CSS](https://tailwindcss.com)
+- Icons by [Heroicons](https://heroicons.com)
+- Permissions by [Spatie Laravel Permission](https://github.com/spatie/laravel-permission)
+
+---
+
+<div align="center">
+
+**© 2024 Abot Imperial. All rights reserved.**
+
+Made with ❤️ for the hospitality industry
+
+</div>
