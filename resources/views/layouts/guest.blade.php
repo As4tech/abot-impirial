@@ -22,17 +22,7 @@
     </head>
     <body class="font-sans text-gray-900 antialiased">
         <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
-            <div class="text-center">
-                <a href="/" class="inline-flex items-center gap-2">
-                    @if(function_exists('setting') && setting('general.logo'))
-                        @php($lg = setting('general.logo'))
-                        @php($lgSrc = \Illuminate\Support\Str::startsWith($lg, ['http://','https://']) ? $lg : asset($lg))
-                        <img src="{{ $lgSrc }}" alt="Logo" class="h-12 w-auto">
-                    @endif
-                    <span class="text-lg font-semibold">{{ $appName }}</span>
-                </a>
-            </div>
-
+    
             <div class="w-full sm:max-w-4xl mt-6 px-6 py-6 bg-white shadow-md overflow-hidden sm:rounded-lg">
                 {{ $slot }}
             </div>

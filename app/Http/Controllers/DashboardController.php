@@ -51,24 +51,43 @@ class DashboardController extends Controller
             }
         }
 
-        // Sales & orders in period
-        $salesTotal = (float) Order::whereBetween('created_at', [$from, $to])->sum('total_amount');
-        $ordersCount = (int) Order::whereBetween('created_at', [$from, $to])->count();
+        // Sales & orders in period (only include paid orders)
+        $paidOrders = Order::whereBetween('created_at', [$from, $to])
+            ->whereHas('payments', function ($query) {
+                $query->where('status', 'paid');
+            })
+            ->get();
+            
+        $salesTotal = (float) $paidOrders->sum('total_amount');
+        $ordersCount = $paidOrders->count();
         $avgOrder = $ordersCount > 0 ? $salesTotal / $ordersCount : 0.0;
 
-        // Revenue breakdown
+        // Revenue breakdown (only include paid orders)
         $restaurantRevenue = (float) OrderItem::whereNotNull('menu_item_id')
-            ->whereBetween('created_at', [$from, $to])
+            ->whereHas('order', function ($query) use ($from, $to) {
+                $query->whereBetween('created_at', [$from, $to])
+                      ->whereHas('payments', function ($paymentQuery) {
+                          $paymentQuery->where('status', 'paid');
+                      });
+            })
             ->selectRaw('COALESCE(SUM(quantity * price), 0) as total')
             ->value('total');
 
         $productsRevenue = (float) OrderItem::whereNotNull('product_id')
-            ->whereBetween('created_at', [$from, $to])
+            ->whereHas('order', function ($query) use ($from, $to) {
+                $query->whereBetween('created_at', [$from, $to])
+                      ->whereHas('payments', function ($paymentQuery) {
+                          $paymentQuery->where('status', 'paid');
+                      });
+            })
             ->selectRaw('COALESCE(SUM(quantity * price), 0) as total')
             ->value('total');
 
         $roomServiceRevenue = (float) Order::where('order_type', 'room')
             ->whereBetween('created_at', [$from, $to])
+            ->whereHas('payments', function ($query) {
+                $query->where('status', 'paid');
+            })
             ->sum('total_amount');
 
         // Low stock alerts (from settings with fallback)

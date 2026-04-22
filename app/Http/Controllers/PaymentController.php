@@ -28,9 +28,26 @@ class PaymentController extends Controller
             'status' => $validated['status'] ?? 'paid',
         ]);
 
+        // Check if order is now fully paid and update status
+        $paidAmount = (float) $order->payments()->where('status', 'paid')->sum('amount');
+        $isFullyPaid = $paidAmount >= (float) $order->total_amount;
+
+        if ($isFullyPaid && $order->status !== 'Completed') {
+            $order->update(['status' => 'Completed']);
+            
+            // If this is a room order, free the room
+            if ($order->room_id && $order->order_type === 'room') {
+                $order->room()->update(['status' => 'Available']);
+            }
+        }
+
+        $statusMessage = $validated['status'] === 'paid' 
+            ? "Payment of {$validated['amount']} recorded successfully via {$validated['method']}!"
+            : "Payment of {$validated['amount']} recorded as {$validated['status']} via {$validated['method']}.";
+
         return redirect()
             ->route('pos.payment.confirmation', $order)
-            ->with('status', "Payment of {$validated['amount']} recorded successfully via {$validated['method']}!");
+            ->with('status', $statusMessage);
     }
 
     public function receipt(Order $order): View

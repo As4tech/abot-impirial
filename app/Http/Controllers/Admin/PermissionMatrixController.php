@@ -13,6 +13,9 @@ class PermissionMatrixController extends Controller
 {
     public function index(Request $request): View
     {
+        // Clear permission cache to ensure fresh data
+        app()['cache']->forget('spatie.permission.cache');
+        
         // Route-level middleware should protect this (e.g., role:Admin)
         $roles = Role::query()->get();
         $preferred = ['Admin','Manager','Cashier','Kitchen'];

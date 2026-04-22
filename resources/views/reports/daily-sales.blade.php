@@ -1,12 +1,28 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Daily Sales (Last {{ $days }} days)</h2>
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Daily Sales Report</h2>
             <a href="{{ route('reports.index') }}" class="px-4 py-2 border rounded">Back</a>
         </div>
     </x-slot>
 
     <div class="p-4 space-y-6">
+        <form method="GET" class="bg-white shadow-sm rounded-lg p-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">From Date</label>
+                    <input type="date" name="from_date" value="{{ request('from_date') }}" class="w-full border rounded px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">To Date</label>
+                    <input type="date" name="to_date" value="{{ request('to_date') }}" class="w-full border rounded px-3 py-2">
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="bg-gray-800 hover:bg-black text-white px-4 py-2 rounded">Filter</button>
+                    <a href="{{ route('reports.daily') }}" class="px-4 py-2 border rounded">Clear</a>
+                </div>
+            </div>
+        </form>
         <div class="bg-white shadow-sm rounded-lg p-4">
             <canvas id="salesChart" height="120"></canvas>
         </div>

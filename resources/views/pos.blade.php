@@ -26,6 +26,10 @@
         @if (session('status'))
             <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-2 rounded">{{ session('status') }}</div>
         @endif
+        
+        @if (session('error'))
+            <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-2 rounded">{{ session('error') }}</div>
+        @endif
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2">
@@ -47,7 +51,7 @@
                     <div id="tab-products" class="tab-panel">
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                             @forelse ($products as $product)
-                                <div class="border rounded p-3 flex flex-col justify-between pos-search-item" data-search-category="product" data-search-text="{{ strtolower(trim($product->name.' '.$product->price)) }}">
+                                <div class="border rounded p-3 flex flex-col justify-between pos-search-item {{ $product->stock_quantity <= 0 ? 'opacity-75 border-red-300 bg-red-50' : '' }}" data-search-category="product" data-search-text="{{ strtolower(trim($product->name.' '.$product->price)) }}">
                                     <div>
                                         @if(!empty($product->image_path))
                                             <img src="{{ $product->image_path }}" alt="{{ $product->name }}" class="mb-2 h-24 w-full object-cover rounded" />
@@ -56,12 +60,26 @@
                                         @endif
                                         <div class="font-medium">{{ $product->name }}</div>
                                         <div class="text-sm text-gray-600"><x-currency :amount="$product->price" /></div>
+                                        <div class="text-sm {{ $product->stock_quantity <= 0 ? 'text-red-600 font-medium' : ($product->stock_quantity <= 5 ? 'text-orange-600' : 'text-green-600') }}">
+                                            Stock: {{ number_format($product->stock_quantity, 3) }}
+                                            @if($product->stock_quantity <= 0)
+                                                - Out of Stock
+                                            @elseif($product->stock_quantity <= 5)
+                                                - Low Stock
+                                            @endif
+                                        </div>
                                     </div>
                                     <form method="POST" action="{{ route('pos.cart.add') }}" class="mt-3 flex items-center gap-2">
                                         @csrf
                                         <input type="hidden" name="product_id" value="{{ $product->id }}">
-                                        <input type="number" name="quantity" min="1" value="1" class="w-20 border rounded px-2 py-1" />
-                                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded">Add</button>
+                                        <input type="number" name="quantity" min="1" max="{{ max(1, floor($product->stock_quantity)) }}" value="1" class="w-20 border rounded px-2 py-1" @if($product->stock_quantity <= 0) disabled @endif />
+                                        <button type="submit" class="px-3 py-1 rounded @if($product->stock_quantity <= 0) bg-gray-400 text-gray-200 cursor-not-allowed disabled @else bg-blue-600 hover:bg-blue-700 text-white @endif" @if($product->stock_quantity <= 0) disabled @endif>
+                                            @if($product->stock_quantity <= 0)
+                                                Out of Stock
+                                            @else
+                                                Add
+                                            @endif
+                                        </button>
                                     </form>
                                 </div>
                             @empty
@@ -229,7 +247,9 @@
                                     const longPrice = btn.getAttribute('data-long');
                                     const shortPrice = btn.getAttribute('data-short');
                                     const price = selType === 'short' ? (shortPrice || '') : (longPrice || '');
-                                    if (ratePriceInput) ratePriceInput.value = price;
+                                    if (ratePriceInput) ratePriceInput.value = ''; // Clear custom price to use default
+                                    // Trigger the price display update
+                                    syncRoomRateFromSelection();
                                     // ensure selector is visible even if change event didn't fire
                                     const selectorWrap = document.getElementById('room_selector_wrap');
                                     if (selectorWrap) {
@@ -302,20 +322,29 @@
                             <select name="room_id" class="w-full border rounded px-2 py-2">
                                 <option value="">-- choose room --</option>
                                 @foreach(($rooms ?? []) as $room)
-                                    <option value="{{ $room->id }}">Room {{ $room->room_number }} ({{ $room->type }})</option>
+                                    <option value="{{ $room->id }}" data-long="{{ $room->long_price ?? $room->price ?? '' }}" data-short="{{ $room->short_price ?? $room->price ?? '' }}">Room {{ $room->room_number }} ({{ $room->type }})</option>
                                 @endforeach
                             </select>
                             @if(($rooms ?? collect())->isEmpty())
                                 <p class="text-sm text-amber-600">No available rooms.</p>
                             @endif
-                            <div>
-                                <label class="block text-sm font-medium">Stay Type</label>
-                                <select id="room_rate_type_select" class="w-full border rounded px-2 py-2">
-                                    <option value="long">Long</option>
-                                    <option value="short">Short</option>
-                                </select>
+                            <div class="flex gap-2 items-end">
+                                <div class="flex-1">
+                                    <label class="block text-sm font-medium">Rate Type</label>
+                                    <select id="room_rate_type_select" class="w-full border rounded px-2 py-2">
+                                        <option value="long">Long Stay</option>
+                                        <option value="short">Short Stay</option>
+                                    </select>
+                                </div>
+                                <div class="flex-1">
+                                    <label class="block text-sm font-medium">Custom Price <span class="text-xs text-gray-500">(Leave empty to use default)</span></label>
+                                    <input type="number" name="room_rate_price" step="0.01" min="0" placeholder="Use default pricing" class="w-full border rounded px-2 py-2" />
+                                </div>
                             </div>
-                        </div>
+                            <div class="text-xs text-gray-600 bg-blue-50 border border-blue-200 rounded p-2">
+                                <strong>Default Pricing:</strong> <span id="default_price_display">Select a room to see default pricing</span>
+                            </div>
+                        </div>    
                         <button id="checkout_btn" type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Checkout</button>
                     </form>
                     <script>
@@ -329,16 +358,27 @@
                             const checkoutBtn = document.getElementById('checkout_btn');
                             const roomButtons = document.querySelectorAll('.use-room');
                             function syncRoomRateFromSelection() {
-                                if (!roomSelect || !rateTypeSelect || !rateTypeInput || !ratePriceInput) return;
+                                if (!roomSelect || !rateTypeSelect || !rateTypeInput) return;
                                 const selectedRoomId = roomSelect.value;
                                 if (!selectedRoomId) return;
-                                const activeButton = Array.from(roomButtons).find(btn => btn.getAttribute('data-room-id') === selectedRoomId);
-                                if (!activeButton) return;
-                                const selectedType = rateTypeSelect.value;
-                                rateTypeInput.value = selectedType;
-                                ratePriceInput.value = selectedType === 'short'
-                                    ? (activeButton.getAttribute('data-short') || '')
-                                    : (activeButton.getAttribute('data-long') || '');
+                                
+                                const selectedOption = roomSelect.options[roomSelect.selectedIndex];
+                                const longPrice = selectedOption.getAttribute('data-long');
+                                const shortPrice = selectedOption.getAttribute('data-short');
+                                const rateType = rateTypeSelect.value;
+                                const defaultPrice = rateType === 'short' ? shortPrice : longPrice;
+                                
+                                if (rateTypeInput) rateTypeInput.value = rateType;
+                                
+                                // Update default price display
+                                const defaultPriceDisplay = document.getElementById('default_price_display');
+                                if (defaultPriceDisplay) {
+                                    if (defaultPrice && defaultPrice !== '') {
+                                        defaultPriceDisplay.innerHTML = `Long: GHS${longPrice}, Short: GHS${shortPrice} <span class="text-blue-600">(Selected: ${rateType === 'short' ? 'Short' : 'Long'} - GHS${defaultPrice})</span>`;
+                                    } else {
+                                        defaultPriceDisplay.textContent = 'No default pricing available';
+                                    }
+                                }
                             }
                             function toggle(){
                                 if (!select || !wrap) return;

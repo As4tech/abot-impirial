@@ -23,20 +23,24 @@ class ReportsController extends Controller
         $days = (int) ($request->integer('days') ?: 30);
         $from = Carbon::today()->subDays($days - 1)->startOfDay();
 
-        $totalSales = (float) Order::where('created_at', '>=', $from)->sum('total_amount');
+        $totalSales = (float) Order::where('created_at', '>=', $from)
+            ->whereHas('payments', function ($query) {
+                $query->where('status', 'paid');
+            })
+            ->sum('total_amount');
         $totalExpenses = (float) Expense::where('expense_date', '>=', $from->toDateString())->sum('amount');
         $profit = $totalSales - $totalExpenses;
 
         return view('reports', compact('days','totalSales','totalExpenses','profit'));
     }
 
-    public function productProfit(Request $request): View
+    public function productProfit(Request $request): View|\Symfony\Component\HttpFoundation\StreamedResponse
     {
         $days = (int) ($request->integer('days') ?: 14);
         $from = $request->date('from')?->startOfDay() ?? Carbon::today()->subDays($days - 1)->startOfDay();
         $to = $request->date('to')?->endOfDay() ?? Carbon::today()->endOfDay();
 
-        // Daily series: revenue, cost, profit
+        // Daily series: revenue, cost, profit (only include paid orders)
         $rows = OrderItem::query()
             ->select(
                 DB::raw('DATE(order_items.created_at) as d'),
@@ -46,6 +50,11 @@ class ReportsController extends Controller
             ->leftJoin('products', 'products.id', '=', 'order_items.product_id')
             ->whereNotNull('order_items.product_id')
             ->whereBetween('order_items.created_at', [$from, $to])
+            ->whereHas('order', function ($query) {
+                $query->whereHas('payments', function ($paymentQuery) {
+                    $paymentQuery->where('status', 'paid');
+                });
+            })
             ->groupBy(DB::raw('DATE(order_items.created_at)'))
             ->orderBy('d')
             ->get();
@@ -107,22 +116,30 @@ class ReportsController extends Controller
             return response()->stream($callback, 200, $headers);
         }
 
+        // Calculate totals for stats cards
+        $totalRevenue = $details->sum('total_revenue');
+        $totalCost = $details->sum('total_cost');
+        $totalProfit = $totalRevenue - $totalCost;
+
         return view('reports.products-profit', [
             'series' => $series,
             'days' => $days,
             'from' => $from,
             'to' => $to,
             'details' => $details,
+            'totalRevenue' => $totalRevenue,
+            'totalCost' => $totalCost,
+            'totalProfit' => $totalProfit,
         ]);
     }
 
-    public function menuItemsSales(Request $request): View
+    public function menuItemsSales(Request $request): View|\Symfony\Component\HttpFoundation\StreamedResponse
     {
         $days = (int) ($request->integer('days') ?: 14);
         $from = $request->date('from')?->startOfDay() ?? Carbon::today()->subDays($days - 1)->startOfDay();
         $to = $request->date('to')?->endOfDay() ?? Carbon::today()->endOfDay();
 
-        // Daily series: total menu items sold and revenue per day
+        // Daily series: total menu items sold and revenue per day (only include paid orders)
         $rows = OrderItem::query()
             ->select(
                 DB::raw('DATE(order_items.created_at) as d'),
@@ -131,6 +148,11 @@ class ReportsController extends Controller
             )
             ->whereNotNull('menu_item_id')
             ->whereBetween('order_items.created_at', [$from, $to])
+            ->whereHas('order', function ($query) {
+                $query->whereHas('payments', function ($paymentQuery) {
+                    $paymentQuery->where('status', 'paid');
+                });
+            })
             ->groupBy(DB::raw('DATE(order_items.created_at)'))
             ->orderBy('d')
             ->get();
@@ -193,13 +215,13 @@ class ReportsController extends Controller
         ]);
     }
 
-    public function productSales(Request $request): View
+    public function productSales(Request $request): View|\Symfony\Component\HttpFoundation\StreamedResponse
     {
         $days = (int) ($request->integer('days') ?: 14);
         $from = $request->date('from')?->startOfDay() ?? Carbon::today()->subDays($days - 1)->startOfDay();
         $to = $request->date('to')?->endOfDay() ?? Carbon::today()->endOfDay();
 
-        // Daily series: total products sold and revenue per day
+        // Daily series: total products sold and revenue per day (only include paid orders)
         $rows = OrderItem::query()
             ->select(
                 DB::raw('DATE(order_items.created_at) as d'),
@@ -208,6 +230,11 @@ class ReportsController extends Controller
             )
             ->whereNotNull('product_id')
             ->whereBetween('order_items.created_at', [$from, $to])
+            ->whereHas('order', function ($query) {
+                $query->whereHas('payments', function ($paymentQuery) {
+                    $paymentQuery->where('status', 'paid');
+                });
+            })
             ->groupBy(DB::raw('DATE(order_items.created_at)'))
             ->orderBy('d')
             ->get();
@@ -270,7 +297,7 @@ class ReportsController extends Controller
         ]);
     }
 
-    public function registers(Request $request): View
+    public function registers(Request $request): View|\Symfony\Component\HttpFoundation\StreamedResponse
     {
         $days = (int) ($request->integer('days') ?: 14);
         $from = $request->date('from')?->startOfDay() ?? Carbon::today()->subDays($days - 1)->startOfDay();
@@ -352,83 +379,146 @@ class ReportsController extends Controller
     }
     public function dailySales(Request $request): View
     {
-        $days = (int) ($request->integer('days') ?: 14);
-        $from = Carbon::today()->subDays($days - 1);
+        $fromDate = $request->date('from_date') ?: Carbon::today()->subDays(13);
+        $toDate = $request->date('to_date') ?: Carbon::today();
 
+        // Only include paid orders (consistent with other reports)
         $rows = Order::select(DB::raw('DATE(created_at) as d'), DB::raw('SUM(total_amount) as total'))
-            ->where('created_at', '>=', $from->startOfDay())
+            ->whereBetween('created_at', [$fromDate->startOfDay(), $toDate->endOfDay()])
+            ->whereHas('payments', function ($query) {
+                $query->where('status', 'paid');
+            })
             ->groupBy(DB::raw('DATE(created_at)'))
             ->orderBy('d')
             ->get();
 
         $series = [];
-        for ($i = 0; $i < $days; $i++) {
-            $date = $from->copy()->addDays($i)->toDateString();
+        $period = $fromDate->copy();
+        while ($period->lte($toDate)) {
+            $date = $period->toDateString();
             $found = $rows->firstWhere('d', $date);
             $series[] = [
                 'date' => $date,
                 'total' => (float) ($found->total ?? 0),
             ];
+            $period->addDay();
         }
 
         return view('reports.daily-sales', [
             'series' => $series,
-            'days' => $days,
+            'from' => $fromDate,
+            'to' => $toDate,
         ]);
     }
 
-    public function inventoryMovement(Request $request): View
+    public function inventoryMovement(Request $request): View|\Symfony\Component\HttpFoundation\StreamedResponse
     {
-        $days = (int) ($request->integer('days') ?: 14);
-        $from = Carbon::today()->subDays($days - 1);
+        $fromDate = $request->date('from_date') ?: Carbon::today()->subDays(13);
+        $toDate = $request->date('to_date') ?: Carbon::today();
 
         // Aggregate data for chart
         $rows = StockMovement::select(
                 DB::raw('DATE(created_at) as d'),
                 DB::raw("SUM(CASE WHEN type='in' THEN quantity WHEN type='out' THEN -quantity ELSE quantity END) as net_qty")
             )
-            ->where('created_at', '>=', $from->startOfDay())
+            ->whereBetween('created_at', [$fromDate->startOfDay(), $toDate->endOfDay()])
             ->groupBy(DB::raw('DATE(created_at)'))
             ->orderBy('d')
             ->get();
 
         $series = [];
-        for ($i = 0; $i < $days; $i++) {
-            $date = $from->copy()->addDays($i)->toDateString();
+        $period = $fromDate->copy();
+        while ($period->lte($toDate)) {
+            $date = $period->toDateString();
             $found = $rows->firstWhere('d', $date);
             $series[] = [
                 'date' => $date,
                 'net' => (float) ($found->net_qty ?? 0),
             ];
+            $period->addDay();
         }
 
         // Detailed movements for table
         $movements = StockMovement::with(['product'])
-            ->where('created_at', '>=', $from->startOfDay())
+            ->whereBetween('created_at', [$fromDate->startOfDay(), $toDate->endOfDay()])
             ->orderBy('created_at', 'desc')
             ->paginate(50);
 
+        if ($request->query('export') === 'csv') {
+            $filename = 'inventory-movement-'.now()->format('Ymd_His').'.csv';
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => 'attachment; filename='.$filename,
+            ];
+            $callback = function () use ($movements) {
+                $out = fopen('php://output', 'w');
+                fputcsv($out, ['Date & Time', 'Product', 'Type', 'Quantity', 'Reference']);
+                foreach ($movements->items() as $movement) {
+                    fputcsv($out, [
+                        $movement->created_at->format('Y-m-d H:i:s'),
+                        $movement->product?->name ?? 'N/A',
+                        strtoupper($movement->type),
+                        (float) $movement->quantity,
+                        $movement->reference ?? 'Manual'
+                    ]);
+                }
+                fclose($out);
+            };
+            return response()->stream($callback, 200, $headers);
+        }
+
         return view('reports.inventory-movement', [
             'series' => $series,
-            'days' => $days,
+            'from' => $fromDate,
+            'to' => $toDate,
             'movements' => $movements,
         ]);
     }
 
     public function bookings(Request $request): View
     {
-        $days = (int) ($request->integer('days') ?: 14);
-        $from = Carbon::today()->subDays($days - 1);
+        $from = $request->date('from') ?: Carbon::today()->subDays(30);
+        $to = $request->date('to') ?: Carbon::today();
         $status = $request->string('status')->toString(); // '', 'active', 'completed', 'cancelled'
         $roomId = $request->integer('room_id');
 
+        // Calculate overall stats for the period
+        $totalCheckins = Booking::whereBetween('check_in_at', [$from->startOfDay(), $to->endOfDay()]);
+        $totalRevenue = Booking::selectRaw('SUM(COALESCE(
+            (SELECT SUM(p.amount) 
+             FROM payments p 
+             WHERE p.order_id = bookings.order_id 
+             AND p.status = \'paid\'), 
+            0
+        )) as total_revenue')
+        ->whereBetween('check_in_at', [$from->startOfDay(), $to->endOfDay()]);
+
+        if (!empty($status)) {
+            $totalCheckins->where('status', $status);
+            $totalRevenue->where('status', $status);
+        }
+        if (!empty($roomId)) {
+            $totalCheckins->where('room_id', $roomId);
+            $totalRevenue->where('room_id', $roomId);
+        }
+
+        $checkinsCount = $totalCheckins->count();
+        $revenueTotal = (float) $totalRevenue->value('total_revenue') ?: 0;
+
+        // Daily breakdown for chart
         $query = Booking::query()
             ->select(
                 DB::raw('DATE(check_in_at) as d'),
                 DB::raw('COUNT(*) as checkins'),
-                DB::raw('SUM(COALESCE(computed_charge, initial_charge, 0)) as revenue')
+                DB::raw('SUM(COALESCE(
+                    (SELECT SUM(p.amount) 
+                     FROM payments p 
+                     WHERE p.order_id = bookings.order_id 
+                     AND p.status = \'paid\'), 
+                    0
+                )) as revenue')
             )
-            ->where('check_in_at', '>=', $from->startOfDay());
+            ->whereBetween('check_in_at', [$from->startOfDay(), $to->endOfDay()]);
 
         if (!empty($status)) {
             $query->where('status', $status);
@@ -443,21 +533,23 @@ class ReportsController extends Controller
             ->get();
 
         $series = [];
-        for ($i = 0; $i < $days; $i++) {
-            $date = $from->copy()->addDays($i)->toDateString();
+        $period = $from->copy();
+        while ($period->lte($to)) {
+            $date = $period->toDateString();
             $found = $rows->firstWhere('d', $date);
             $series[] = [
                 'date' => $date,
                 'checkins' => (int) ($found->checkins ?? 0),
                 'revenue' => (float) ($found->revenue ?? 0),
             ];
+            $period->addDay();
         }
 
         $rooms = Room::orderBy('room_number')->get(['id','room_number']);
         
         // Detailed rows for the selected period
-        $detailsQuery = Booking::with('room')
-            ->where('check_in_at', '>=', $from->startOfDay())
+        $detailsQuery = Booking::with(['room', 'order.payments'])
+            ->whereBetween('check_in_at', [$from->startOfDay(), $to->endOfDay()])
             ->orderByDesc('check_in_at');
         if (!empty($status)) {
             $detailsQuery->where('status', $status);
@@ -469,11 +561,14 @@ class ReportsController extends Controller
 
         return view('reports.bookings', [
             'series' => $series,
-            'days' => $days,
+            'from' => $from,
+            'to' => $to,
             'status' => $status,
             'roomId' => $roomId,
             'rooms' => $rooms,
             'details' => $details,
+            'checkinsCount' => $checkinsCount,
+            'revenueTotal' => $revenueTotal,
         ]);
     }
 }

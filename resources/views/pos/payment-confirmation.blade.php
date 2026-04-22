@@ -143,15 +143,26 @@
                 @endif
             </div>
 
-            <!-- Payment Recording Form (only show if no payments recorded) -->
-            @if($order->payments->where('status', 'paid')->count() == 0)
+            <!-- Payment Recording Form -->
+            @if($order->payments->where('status', 'paid')->count() == 0 || ($order->order_type === 'room' && $order->payments->where('status', 'pending')->count() > 0))
                 <div class="bg-gray-50 rounded-lg p-6 border-2 border-dashed border-gray-300">
                     <h4 class="font-semibold text-gray-900 mb-4 flex items-center">
                         <svg class="h-5 w-5 mr-2 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
                         </svg>
-                        Record Payment
+                        @if($order->order_type === 'room' && str_contains(session('status'), 'checked out'))
+                            Complete Room Check-out Payment
+                        @else
+                            Record Payment
+                        @endif
                     </h4>
+                    
+                    @if($order->order_type === 'room' && str_contains(session('status'), 'checked out'))
+                        <div class="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg mb-4">
+                            <div class="font-medium">Room Check-out Complete</div>
+                            <div class="text-sm">Please record the final payment to complete the order and free the room.</div>
+                        </div>
+                    @endif
                     
                     <form method="POST" action="{{ route('pos.payments.store') }}" class="space-y-4">
                         @csrf
@@ -169,11 +180,20 @@
                             
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                                <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="paid" selected>Paid</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="failed">Failed</option>
-                                </select>
+                                @if($order->order_type === 'room')
+                                    <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="paid" selected>Paid</option>
+                                        <option value="pending">Pending (for check-out)</option>
+                                        <option value="failed">Failed</option>
+                                    </select>
+                                    <p class="text-sm text-gray-500 mt-1">Room orders can have pending payments during stay</p>
+                                @else
+                                    <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="paid" selected>Paid</option>
+                                        <option value="failed">Failed</option>
+                                    </select>
+                                    <p class="text-sm text-gray-500 mt-1">Restaurant orders must be paid to complete</p>
+                                @endif
                             </div>
                         </div>
                         
@@ -221,9 +241,17 @@
                     </a>
                     
                     @if($order->room_id)
-                        <a href="{{ route('bookings.checkout', $order->room_id) }}" class="flex-1 text-center bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-                            Checkout Room
-                        </a>
+                        @php
+                            $booking = \App\Models\Booking::where('order_id', $order->id)->where('status', 'active')->first();
+                        @endphp
+                        @if($booking)
+                            <form method="POST" action="{{ route('bookings.checkout', $booking) }}" class="flex-1">
+                                @csrf
+                                <button type="submit" class="w-full text-center bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                                    Checkout Room
+                                </button>
+                            </form>
+                        @endif
                     @endif
                 </div>
             </div>

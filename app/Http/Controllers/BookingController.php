@@ -26,21 +26,20 @@ class BookingController extends Controller
         $order = $booking->order;
         $room = $booking->room;
 
-        // Compute final charge
-        $charge = 0.0;
-        if ($booking->rate_type === 'short') {
-            $charge = round((float) ($room->short_price ?? $room->price ?? 0), 2);
-        } else {
-            $charge = round((float) ($room->long_price ?? $room->price ?? 0), 2);
-        }
+        // Use the original price that was charged at check-in
+        // This preserves custom pricing that may have been set during check-in
+        $charge = round((float) ($booking->initial_charge ?? 0), 2);
 
-        // Determine delta (final minus any initial charge already billed at check-in)
-        $initial = (float) ($booking->initial_charge ?? 0);
-        $delta = round(max(0, $charge - $initial), 2);
+        // For consistency, also update computed_charge to match what was actually charged
+        // This ensures the booking record reflects the actual pricing used
+        $finalCharge = $charge;
+
+        // No additional charge needed since we're using the original price
+        $delta = 0;
 
         // Update booking and order
         $booking->update([
-            'computed_charge' => $charge,
+            'computed_charge' => $finalCharge,
             'check_out_at' => now(),
             'status' => 'completed',
         ]);
@@ -54,16 +53,29 @@ class BookingController extends Controller
                 'quantity' => 1,
                 'price' => $delta,
             ]);
+
+            $order->update([
+                'total_amount' => round(($order->total_amount ?? 0) + $delta, 2),
+            ]);
         }
 
-        $order->update([
-            'total_amount' => round(($order->total_amount ?? 0) + $delta, 2),
-            'status' => 'Completed',
-        ]);
+        // Check if order has been fully paid
+        $paidAmount = (float) $order->payments()->where('status', 'paid')->sum('amount');
+        $isFullyPaid = $paidAmount >= (float) $order->total_amount;
 
-        // Free room
-        Room::where('id', $room->id)->update(['status' => 'Available']);
+        if ($isFullyPaid) {
+            // Order is fully paid, complete it
+            $order->update(['status' => 'Completed']);
+            
+            // Free room
+            Room::where('id', $room->id)->update(['status' => 'Available']);
 
-        return back()->with('status', 'Checked out successfully');
+            return redirect()->route('pos.payment.confirmation', $order)
+                ->with('status', 'Room checked out successfully! Order fully paid.');
+        } else {
+            // Order has pending or insufficient payments, redirect to payment confirmation
+            return redirect()->route('pos.payment.confirmation', $order)
+                ->with('status', 'Room checked out! Please record payment to complete the order.');
+        }
     }
 }

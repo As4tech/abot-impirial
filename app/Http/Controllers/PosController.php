@@ -47,7 +47,23 @@ class PosController extends Controller
             'quantity' => ['nullable', 'integer', 'min:1'],
         ]);
 
-        $this->pos->addItem((int) $validated['product_id'], (int) ($validated['quantity'] ?? 1));
+        $product = Product::findOrFail($validated['product_id']);
+        $quantity = (int) ($validated['quantity'] ?? 1);
+
+        // Check stock availability
+        if ($product->stock_quantity <= 0) {
+            return back()
+                ->with('error', "Product '{$product->name}' is out of stock and cannot be added to cart.")
+                ->withInput();
+        }
+
+        if ($product->stock_quantity < $quantity) {
+            return back()
+                ->with('error', "Insufficient stock for '{$product->name}'. Available: {$product->stock_quantity}, Requested: {$quantity}")
+                ->withInput();
+        }
+
+        $this->pos->addItem((int) $validated['product_id'], $quantity);
 
         return back()->with('status', 'Item added');
     }
@@ -63,7 +79,17 @@ class PosController extends Controller
         if (!empty($validated['key'])) {
             $this->pos->updateLine($validated['key'], (int) $validated['quantity']);
         } elseif (!empty($validated['product_id'])) {
-            $this->pos->updateItem((int) $validated['product_id'], (int) $validated['quantity']);
+            $product = Product::findOrFail($validated['product_id']);
+            $quantity = (int) $validated['quantity'];
+
+            // Check stock availability when increasing quantity
+            if ($quantity > 0 && $product->stock_quantity < $quantity) {
+                return back()
+                    ->with('error', "Insufficient stock for '{$product->name}'. Available: {$product->stock_quantity}, Requested: {$quantity}")
+                    ->withInput();
+            }
+
+            $this->pos->updateItem((int) $validated['product_id'], $quantity);
         }
 
         return back()->with('status', 'Cart updated');
@@ -115,13 +141,17 @@ class PosController extends Controller
         }
 
         $rateType = $validated['room_rate_type'] ?? null;
-        $ratePrice = isset($validated['room_rate_price']) ? (float) $validated['room_rate_price'] : null;
-        // Compute authoritative room charge using DB values
+        $ratePrice = isset($validated['room_rate_price']) && $validated['room_rate_price'] !== '' ? (float) $validated['room_rate_price'] : null;
+        
+        // Use custom price if provided, otherwise use default pricing
         if ($validated['order_type'] === 'room') {
-            $rateType = in_array($rateType, ['long', 'short'], true) ? $rateType : 'long';
-            $ratePrice = $rateType === 'short'
-                ? (float) ($room->short_price ?? $room->price ?? 0)
-                : (float) ($room->long_price ?? $room->price ?? 0);
+            if ($ratePrice === null) {
+                // Use default pricing from database
+                $ratePrice = ($rateType === 'short')
+                    ? (float) ($room->short_price ?? $room->price ?? 0)
+                    : (float) ($room->long_price ?? $room->price ?? 0);
+            }
+            // If custom price is provided, use it as-is (staff has full discretion)
         }
         $order = $this->pos->checkout($request->user(), $validated['order_type'], $roomId, $rateType, $ratePrice);
 

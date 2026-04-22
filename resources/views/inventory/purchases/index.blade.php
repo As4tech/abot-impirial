@@ -11,18 +11,29 @@
             <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-2 rounded">{{ session('status') }}</div>
         @endif
 
-        <form method="GET" class="flex items-end gap-2">
-            <div>
-                <label class="block text-sm font-medium">Supplier</label>
-                <select name="supplier_id" class="border rounded px-3 py-2 w-72">
-                    <option value="">All</option>
-                    @foreach ($suppliers as $s)
-                        <option value="{{ $s->id }}" {{ ($supplierId ?? '') == $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div>
-                <button class="bg-gray-800 hover:bg-black text-white px-4 py-2 rounded">Filter</button>
+        <form method="GET" class="bg-white shadow-sm rounded-lg p-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">From Date</label>
+                    <input type="date" name="from_date" value="{{ request('from_date') }}" class="w-full border rounded px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">To Date</label>
+                    <input type="date" name="to_date" value="{{ request('to_date') }}" class="w-full border rounded px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Supplier</label>
+                    <select name="supplier_id" class="w-full border rounded px-3 py-2">
+                        <option value="">All Suppliers</option>
+                        @foreach ($suppliers as $s)
+                            <option value="{{ $s->id }}" {{ ($supplierId ?? '') == $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="bg-gray-800 hover:bg-black text-white px-4 py-2 rounded">Filter</button>
+                    <a href="{{ route('inventory.purchases.index') }}" class="px-4 py-2 border rounded">Clear</a>
+                </div>
             </div>
         </form>
 

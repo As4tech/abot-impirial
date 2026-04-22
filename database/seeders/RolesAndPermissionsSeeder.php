@@ -36,6 +36,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'room-types.view', 'room-types.create', 'room-types.edit', 'room-types.delete',
             // Inventory
             'inventory.view', 'inventory.manage',
+            // Purchases
+            'purchases.view', 'purchases.create', 'purchases.edit', 'purchases.delete',
             // Expenses
             'expenses.view', 'expenses.manage',
             // POS and Orders
@@ -57,7 +59,9 @@ class RolesAndPermissionsSeeder extends Seeder
         $manager = Role::findByName('Manager');
         $manager->syncPermissions([
             'reports.sales.view', 'reports.inventory.view', 'reports.bookings.view', 'reports.registers.view',
-            'inventory.view', 'expenses.view', 'expenses.manage',
+            'inventory.view', 'inventory.manage',
+            'purchases.view', 'purchases.create', 'purchases.edit', 'purchases.delete',
+            'expenses.view', 'expenses.manage',
             'registers.view', 'registers.open', 'registers.close',
             'products.view', 'menu_items.view', 'bookings.view',
             'rooms.view', 'room-types.view',

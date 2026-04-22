@@ -82,7 +82,11 @@ Route::middleware('auth')->group(function () {
     Route::get('bookings', [BookingController::class, 'index'])->middleware('permission:bookings.view')->name('bookings.index');
     Route::get('bookings/create', [BookingController::class, 'create'])->middleware('permission:bookings.create')->name('bookings.create');
     Route::post('bookings', [BookingController::class, 'store'])->middleware('permission:bookings.create')->name('bookings.store');
-    Route::post('bookings/{booking}/checkout', [BookingController::class, 'checkout'])->middleware('permission:bookings.update')->name('bookings.checkout');
+    Route::get('bookings/{booking}/checkout', function (Booking $booking) {
+    return redirect()->back()->with('error', 'Please use the checkout button to check out a room.');
+})->middleware('permission:bookings.update')->name('bookings.checkout.get');
+
+Route::post('bookings/{booking}/checkout', [BookingController::class, 'checkout'])->middleware('permission:bookings.update')->name('bookings.checkout');
 
     // Restaurant CRUD: Menu Categories and Items - permission based
     Route::resource('menu-categories', MenuCategoryController::class)->except(['show'])->middleware('permission:menu_items.update');
@@ -156,8 +160,16 @@ Route::middleware('auth')->group(function () {
             ->except(['show'])
             ->middleware('can:inventory.manage');
         Route::resource('purchases', App\Http\Controllers\PurchaseController::class)
-            ->only(['index','create','store','show'])
-            ->middleware('can:inventory.manage');
+            ->only(['index','create','store','show','edit','update','destroy'])
+            ->middleware([
+                'index' => 'can:purchases.view',
+                'create' => 'can:purchases.create',
+                'store' => 'can:purchases.create',
+                'show' => 'can:purchases.view',
+                'edit' => 'can:purchases.edit',
+                'update' => 'can:purchases.edit',
+                'destroy' => 'can:purchases.delete',
+            ]);
     });
 
     // Reports - permission based (granular)
