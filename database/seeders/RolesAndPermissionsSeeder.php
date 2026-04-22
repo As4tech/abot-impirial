@@ -69,7 +69,8 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $cashier = Role::findByName('Cashier');
         $cashier->syncPermissions([
-            'pos.view', 'orders.view', 'registers.open', 'registers.close'
+            'pos.view', 'orders.view', 'registers.open', 'registers.close',
+            'inventory.view', 'purchases.view', 'purchases.create'
         ]);
 
         $kitchen = Role::findByName('Kitchen Staff');
